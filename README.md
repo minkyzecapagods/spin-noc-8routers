@@ -129,9 +129,3 @@ gtkwave simulation_waveform.vcd
 | `Router` | router.h | Roteador completo: 6 FIFOs + 6 lógicas + 6 árbitros + 1 crossbar |
 | `SpinNocTop` | spin_noc_top.h | Top-level com 8 roteadores interconectados na topologia Fat-Tree |
 | `SpinNocTb` | spin_noc_tb.h/.cpp | Testbench: injeção, monitoramento, medição de latência |
-
----
-
-## Link do Vídeo
-
-> **TODO:** Inserir link do vídeo explicativo aqui.
