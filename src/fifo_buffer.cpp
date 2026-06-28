@@ -1,51 +1,15 @@
 #include "fifo_buffer.h"
 
 // ============================================================
-// processo_escrita
-// Condição de escrita: din_valid=1 e fila não cheia (din_ready=1)
-// Ocorre no flanco de subida do clock
+// processo_fifo
+// Executa leitura, escrita e atualização de saídas de forma
+// determinística, simulando corretamente um bloco de hardware.
 // ============================================================
-void FifoBuffer::processo_escrita() {
+void FifoBuffer::processo_fifo() {
     if (rst.read()) {
         // Esvazia a fila em caso de reset
         while (!fila.empty()) fila.pop();
-        return;
-    }
-
-    // Handshake satisfeito: produtor tem dado válido e FIFO tem espaço
-    if (din_valid.read() && (int)fila.size() < CAPACIDADE_FIFO) {
-        Flit novo_flit = din.read();
-        fila.push(novo_flit);
-        // Log de depuração (removível em síntese)
-        // std::cout << "@" << sc_time_stamp()
-        //           << " [FIFO] Flit inserido: " << novo_flit << std::endl;
-    }
-}
-
-// ============================================================
-// processo_leitura
-// Remove o flit da frente da fila quando o consumidor
-// sinaliza dout_ready=1 e há dado disponível (dout_valid=1)
-// ============================================================
-void FifoBuffer::processo_leitura() {
-    if (rst.read()) return;
-
-    if (!fila.empty() && dout_ready.read()) {
-        // std::cout << "@" << sc_time_stamp()
-        //           << " [FIFO] Flit removido: " << fila.front() << std::endl;
-        fila.pop();
-    }
-}
-
-// ============================================================
-// atualiza_saidas
-// Mantém saídas combinacionais atualizadas conforme estado interno
-// din_ready  = 1 quando há espaço na fila (fila.size < CAPACIDADE)
-// dout_valid = 1 quando há pelo menos 1 flit na fila
-// dout       = flit da cabeça da fila (ou flit inválido se vazia)
-// ============================================================
-void FifoBuffer::atualiza_saidas() {
-    if (rst.read()) {
+        
         din_ready.write(false);
         dout_valid.write(false);
         Flit flit_vazio;
@@ -53,13 +17,33 @@ void FifoBuffer::atualiza_saidas() {
         return;
     }
 
-    // Pronto para receber se não estiver cheia
-    din_ready.write((int)fila.size() < CAPACIDADE_FIFO);
+    bool pushed = false;
+    bool popped = false;
+    Flit incoming;
 
-    // Válido para enviar se não estiver vazia
+    // 1. Avalia as condições de entrada ANTES de modificar o estado interno
+    if (din_valid.read() && fila.size() < CAPACIDADE_FIFO) {
+        incoming = din.read();
+        pushed = true;
+    }
+    
+    if (!fila.empty() && dout_ready.read()) {
+        popped = true;
+    }
+
+    // 2. Atualiza o estado da memória (a fila real)
+    if (popped) {
+        fila.pop();
+    }
+    
+    if (pushed) {
+        fila.push(incoming);
+    }
+
+    // 3. Atualiza as saídas simultaneamente para o próximo ciclo
+    din_ready.write(fila.size() < CAPACIDADE_FIFO);
     dout_valid.write(!fila.empty());
-
-    // Disponibiliza o flit da cabeça na porta de saída
+    
     if (!fila.empty()) {
         dout.write(fila.front());
     } else {

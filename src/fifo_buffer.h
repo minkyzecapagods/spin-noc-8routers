@@ -20,6 +20,7 @@
 //   dout_valid : FIFO indica que há dado disponível
 //   dout_ready : consumidor sinaliza que leu/consumiu o dado
 // ============================================================
+
 SC_MODULE(FifoBuffer) {
     // ----- Sinais de controle globais -----
     sc_in<bool>  clk;
@@ -39,36 +40,15 @@ SC_MODULE(FifoBuffer) {
     std::queue<Flit> fila;
 
     SC_CTOR(FifoBuffer) {
-        SC_METHOD(processo_escrita);
+        // Usa apenas um processo síncrono para garantir determinismo
+        // e eliminar race conditions de delta-cycles
+        SC_METHOD(processo_fifo);
         sensitive << clk.pos();
         dont_initialize();
-
-        SC_METHOD(processo_leitura);
-        sensitive << clk.pos();
-        dont_initialize();
-
-        SC_METHOD(atualiza_saidas);
-        // Sensível a qualquer mudança que afete as saídas
-        sensitive << clk.pos() << rst;
     }
 
-    // -------------------------------------------------------
-    // processo_escrita: registra flit na fila no flanco
-    // de subida do clock quando handshake é satisfeito
-    // -------------------------------------------------------
-    void processo_escrita();
-
-    // -------------------------------------------------------
-    // processo_leitura: remove flit da fila quando o
-    // consumidor confirma leitura (dout_ready == true)
-    // -------------------------------------------------------
-    void processo_leitura();
-
-    // -------------------------------------------------------
-    // atualiza_saidas: mantém saídas combinacionais
-    // coerentes com o estado interno da fila
-    // -------------------------------------------------------
-    void atualiza_saidas();
+    // Processo unificado de controle da FIFO
+    void processo_fifo();
 };
 
 #endif // FIFO_BUFFER_H
