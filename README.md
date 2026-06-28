@@ -1,10 +1,5 @@
 # NoC SPIN em SystemC — 8 Roteadores (Fat-Tree 2 Níveis)
 
-## Identificação do Grupo
-> **TODO:** Preencher com os nomes dos integrantes e link do vídeo explicativo.
-
----
-
 ## Visão Geral
 
 Este projeto implementa uma **Rede em Chip (NoC)** baseada na topologia **SPIN (Scalable, Programmable, Integrated Network)** usando **SystemC**.
@@ -14,20 +9,30 @@ A topologia é uma **Fat-Tree de 2 níveis** com:
 - **4 Roteadores Raiz** (IDs 4–7): interconectam as folhas
 - **8 Hosts** (IDs 0–7): terminais finais de injeção/recepção de tráfego
 
+Cada roteador folha conecta-se a dois roteadores raiz distintos (via portas `UP_0` e `UP_1`), garantindo dois caminhos alternativos para qualquer destino fora da subárvore local.
 ```
-                    [ ROOT 4 ]      [ ROOT 5 ]      [ ROOT 6 ]      [ ROOT 7 ]
-                   /          \    /          \    /          \    /          \
-            [LEAF 0]    [LEAF 1] [LEAF 0] [LEAF 1] [LEAF 2] [LEAF 3] [LEAF 2] [LEAF 3]
-            /    \      /    \                                 /    \      /    \
-         H0      H1  H2      H3                            H4      H5  H6      H7
+Hosts conectados a cada folha:
+
+  [LEAF 0]       [LEAF 1]       [LEAF 2]       [LEAF 3]
+  /      \       /      \       /      \       /      \
+ H0      H1     H2      H3     H4      H5     H6      H7
 ```
+```
+Conexões raiz ↔ folha (cada raiz serve exatamente 2 folhas):
+
+  R4 ──DOWN_0──► R0    R4 ──DOWN_1──► R2
+  R5 ──DOWN_0──► R0    R5 ──DOWN_1──► R3
+  R6 ──DOWN_0──► R1    R6 ──DOWN_1──► R2
+  R7 ──DOWN_0──► R1    R7 ──DOWN_1──► R3
+```
+> Consequência: qualquer par folha–folha tem exatamente um roteador raiz em comum, garantindo um caminho de 3 saltos (folha → raiz → folha) para toda comunicação entre subárvores distintas.
 
 **Diagrama de conexões UP/DOWN:**
 ```
-Router 0 UP_0 <-> Router 4 DOWN_0    Router 2 UP_0 <-> Router 6 DOWN_0
-Router 0 UP_1 <-> Router 5 DOWN_0    Router 2 UP_1 <-> Router 7 DOWN_0
-Router 1 UP_0 <-> Router 4 DOWN_1    Router 3 UP_0 <-> Router 6 DOWN_1
-Router 1 UP_1 <-> Router 5 DOWN_1    Router 3 UP_1 <-> Router 7 DOWN_1
+R0 UP_0  ↔  R4 DOWN_0      R1 UP_0  ↔  R6 DOWN_0
+R0 UP_1  ↔  R5 DOWN_0      R1 UP_1  ↔  R7 DOWN_0
+R2 UP_0  ↔  R4 DOWN_1      R3 UP_0  ↔  R5 DOWN_1
+R2 UP_1  ↔  R6 DOWN_1      R3 UP_1  ↔  R7 DOWN_1
 ```
 
 ---
