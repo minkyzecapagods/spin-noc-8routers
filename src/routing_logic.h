@@ -47,6 +47,10 @@ SC_MODULE(RoutingLogic) {
     // Construtor parametrizado
     RoutingLogic(sc_module_name name, int id)
         : sc_module(name), router_id(id), toggle_up(false) {
+        // Necessário porque este construtor é parametrizado (não usa
+        // SC_CTOR), e o SC_METHOD abaixo precisa de SC_CURRENT_USER_MODULE.
+        SC_HAS_PROCESS(RoutingLogic);
+
         SC_METHOD(calcula_rota);
         sensitive << flit_in << flit_valid;
     }
